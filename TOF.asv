@@ -1,0 +1,89 @@
+
+classdef TOF < Measurement
+    %TOF Summary of this class goes here
+    %   Detailed explanation goes here
+    
+    properties
+        TOFTimes = [];
+        imagingTimes = [];
+        trapReleaseTime = -1;
+        
+        itarationsOrder = -1;
+        
+        type = -1;
+        event = -1;
+        channel = -1;
+        ramp = -1;
+        newVal = -1;
+    end
+    
+    
+     methods ( Static = true )
+        function o = create(appData)
+            o = TOF(appData);
+        end
+     end
+     
+    methods        
+        function obj = TOF(appData)
+            % first line - MUST
+            obj = obj@Measurement(appData.data.LVData);
+            
+            obj.type = obj.valueTypes.eventStartTime;
+            obj.event = obj.LVData.getEventIndex('Imaging');
+            obj.channel = -1;
+            obj.ramp = -1;
+            obj.newVal = -1;
+            
+            obj.baseFolder = appData.save.saveDir;
+            obj.trapReleaseTime = obj.LVData.eventsData(obj.LVData.getEventIndex('Trap Release')).Event_Start;
+            
+            obj = obj.initialize(appData);
+        end
+        
+        function obj = initialize(obj, appData) %#ok<INUSD>          
+            if obj.isInitialized == 0
+                answer = measDlg({'Folder' 'No Iterations' 'Imaging Time [ms]'  'Iterations Order'}, 'Time of Flight Measurements', [1 1 1 1]', ...
+                    {obj.baseFolder appData.consts.loops.TOF.noIterations appData.consts.loops.TOF.TOFTimes {'Iterate Measurement' 'Iterate Loop' 'Random Iterations'}}, ...
+                    obj.op, {'folder' 'edit' 'edit' 'popupmenu'}, {obj.baseFolder 0 0 1}); %#ok<*NBRAK>
+                obj.isInitialized = 1;
+            else
+                answer = measDlg({'Folder' 'No Iterations' 'Imaging Time [ms]'  'Iterations Order'}, 'Time of Flight Measurements', [1 1 1 1]', ...
+                    {obj.baseFolder obj.noIterations vec2str(obj.TOFTimes) {'Iterate Measurement' 'Iterate Loop' 'Random Iterations'}}, ...
+                    obj.op, {'folder' 'edit' 'edit' 'popupmenu'}, {obj.baseFolder 0 0 1}); %#ok<*NBRAK>
+            end
+            if isempty(answer)
+%                 obj = [];
+                return
+            end
+            obj.baseFolder = answer{1};
+            obj.noIterations = str2double(answer{2});
+            obj.TOFTimes = eval([ '[' answer{3}  ']' ]);
+            obj.itarationsOrder = answer{4};
+%             obj.noLoops = length(obj.TOFTimes);
+            TOF = obj.iterateVec(obj.TOFTimes, obj.itarationsOrder);
+            obj.imagingTimes = obj.trapReleaseTime + TOF*1e3;
+            
+%             obj.currentIteration = 1;
+%             obj.isFirstIteration = 1;
+            obj.position = 1;
+        end
+                
+        function [obj, newLVData] = next(obj, appData) %#ok<INUSD>
+            if obj.position > length(obj.imagingTimes)
+                newLVData = [];
+                return
+            end
+            
+            newLVData = obj.LVData.changeValue(obj.type, obj.event, obj.channel, obj.ramp, ...
+                    obj.imagingTimes(obj.position) );
+            set(appData.ui.pmSaveParam, 'Value', appData.consts.saveParams.TOF);
+            set(appData.ui.etParamVal, 'String', num2str(obj.imagingTimes(obj.position) - obj.trapReleaseTime));
+            
+            obj.position = obj.position + 1;
+        end
+    end
+    
+    
+end
+

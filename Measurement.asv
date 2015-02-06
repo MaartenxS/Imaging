@@ -1,0 +1,36 @@
+
+classdef Measurement
+    
+    properties (SetAccess = public)
+        LVData = [];
+        op = struct('Interpreter', 'tex', 'WindowStyle', 'normal', 'Resize', 'off');
+        baseFolder = '';
+        
+        noIterations = -1;
+        currentIteration = 1;
+        isFirstIteration = 1;
+        position = 
+        
+        valueTypes = LVData.getTypes();
+        type = -1;
+        event = -1;
+        channel = -1;
+        ramp = -1;
+        newVal = -1;
+    end
+    
+    methods
+        function obj = Measurement(LVData)
+            obj.LVData = LVData;
+        end
+        
+    end
+    
+    
+    methods ( Abstract = true )
+        obj = initialize(obj, appData, isEdit);
+        obj = edit(obj, appData);
+        [obj, LVData] = next(obj, appData);
+    end        
+    
+end
