@@ -27,7 +27,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % defining consts
 %
-appData.consts.vertion = 'GitHub';
+appData.consts.version = 'GitHub';
 appData.consts. saveVersion = '-v7';
 appData.consts.runVer = runVer;
 
